@@ -11,15 +11,6 @@ const ActionButtons = ({ uploadedFile, onAction, loading }) => {
 
   const buttons = [
     {
-      id: 'ingest',
-      label: 'Ingest Document',
-      description: 'Process and analyze document structure',
-      icon: Database,
-      color: 'blue',
-      gradient: 'from-blue-500 to-blue-600',
-      requiresInput: false
-    },
-    {
       id: 'query',
       label: 'Query',
       description: 'Ask questions about the document',
@@ -45,7 +36,6 @@ const ActionButtons = ({ uploadedFile, onAction, loading }) => {
       icon: AlertTriangle,
       color: 'orange',
       gradient: 'from-orange-500 to-orange-600',
-      requiresInput: true,
       placeholder: 'What are the liability concerns in this contract?'
     }
   ];

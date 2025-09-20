@@ -110,7 +110,7 @@ const ResultBox = ({ result, onClear }) => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <motion.button
                   onClick={copyToClipboard}
@@ -121,7 +121,7 @@ const ResultBox = ({ result, onClear }) => {
                 >
                   <Copy className="w-5 h-5" />
                 </motion.button>
-                
+
                 <motion.button
                   onClick={downloadResult}
                   className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-white dark:hover:bg-gray-800 rounded-lg transition-colors"
@@ -131,7 +131,7 @@ const ResultBox = ({ result, onClear }) => {
                 >
                   <Download className="w-5 h-5" />
                 </motion.button>
-                
+
                 <motion.button
                   onClick={onClear}
                   className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-white dark:hover:bg-gray-800 rounded-lg transition-colors"
@@ -144,7 +144,7 @@ const ResultBox = ({ result, onClear }) => {
               </div>
             </div>
           </div>
-          
+
           {/* Content */}
           <div className="p-6">
             <div className="max-h-96 overflow-y-auto">
@@ -161,7 +161,16 @@ const ResultBox = ({ result, onClear }) => {
               ) : (
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-                    {result.data}
+                    {typeof result.data === 'object' && result.data !== null ? (
+                      Object.entries(result.data).map(([heading, summary]) => (
+                        <div key={heading} className="mb-4">
+                          <h4 className="font-semibold text-gray-900 dark:text-white">{heading}</h4>
+                          <p className="mt-1">{summary}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p>{result.data}</p>
+                    )}
                   </div>
                 </div>
               )}
