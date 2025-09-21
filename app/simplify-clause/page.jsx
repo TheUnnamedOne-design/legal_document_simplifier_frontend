@@ -61,11 +61,23 @@ ARTICLE 9: GOVERNING LAW
         const storedFileData = sessionStorage.getItem('uploadedFileData')
         if (storedFileData) {
           const fileData = JSON.parse(storedFileData)
-          setFileContent(fileData.content || "")
-          setFileName(fileData.name || "Document")
-          console.log('File loaded from sessionStorage:', fileData.name)
+          
+          if (fileData.extractedFromBackend && fileData.content) {
+            // Use text content extracted by backend
+            setFileContent(fileData.content)
+            setFileName(fileData.name || "Document")
+            console.log('File loaded from backend extraction:', fileData.name)
+            console.log('Content length:', fileData.content.length)
+          } else if (fileData.content) {
+            // Fallback to locally stored content
+            setFileContent(fileData.content)
+            setFileName(fileData.name || "Document")
+            console.log('File loaded from local storage:', fileData.name)
+          } else {
+            throw new Error('No text content available')
+          }
         } else {
-          // Fallback to mock content if no file is stored
+          // No file data found, use mock content
           setFileContent(mockPdfContent)
           setFileName("Sample Service Agreement.pdf")
           setError("No uploaded document found. Displaying sample content.")

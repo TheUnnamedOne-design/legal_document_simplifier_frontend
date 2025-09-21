@@ -45,53 +45,25 @@ export default function UploadPage() {
     }
   }, [])
 
-  const storeFileInSession = async (file) => {
-  try {
-    let fileContent
-    
-    if (file.type === 'application/pdf') {
-      // For PDFs, store as base64 and let the display component handle text extraction
-      const reader = new FileReader()
-      return new Promise((resolve, reject) => {
-        reader.onload = () => {
-          const fileData = {
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            content: reader.result, // Base64 content
-            rawContent: true, // Flag to indicate this needs processing
-            doc_id: 'ef22gge2',
-            lastModified: file.lastModified,
-            uploadTime: new Date().toISOString()
-          }
-          
-          sessionStorage.setItem('uploadedFileData', JSON.stringify(fileData))
-          console.log('PDF file stored in sessionStorage:', fileData.name)
-          resolve()
-        }
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
-    } else {
-      // For text files, read as text
-      fileContent = await file.text()
+  const storeFileInSession = (fileName, textContent, docId, fileSize, fileType) => {
+    try {
       const fileData = {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        content: fileContent,
-        doc_id: 'ef22gge2',
-        lastModified: file.lastModified,
-        uploadTime: new Date().toISOString()
+        name: fileName,
+        size: fileSize,
+        type: fileType,
+        content: textContent, // Text content from backend
+        doc_id: docId,
+        uploadTime: new Date().toISOString(),
+        extractedFromBackend: true // Flag to indicate content came from backend
       }
       
       sessionStorage.setItem('uploadedFileData', JSON.stringify(fileData))
-      console.log('Text file stored in sessionStorage:', fileData.name)
+      console.log('File data stored in sessionStorage:', fileName)
+      console.log('Text content length:', textContent.length)
+    } catch (error) {
+      console.error('Error storing file in sessionStorage:', error)
     }
-  } catch (error) {
-    console.error('Error storing file in sessionStorage:', error)
   }
-}
 
   const performAutoIngest = async (file) => {
     if (!file) return
@@ -100,12 +72,11 @@ export default function UploadPage() {
     setError(null)
 
     try {
-      // Store file in sessionStorage first
-      await storeFileInSession(file)
-
       const formData = new FormData()
       formData.append('file', file)
       formData.append('doc_id', 'ef22gge2')
+
+      console.log('Uploading file to backend for text extraction...')
 
       const response = await fetch('http://127.0.0.1:5000/api/legal/ingest', {
         method: 'POST',
@@ -117,7 +88,21 @@ export default function UploadPage() {
       }
 
       const data = await response.json()
-      console.log('Auto-ingest successful:', data)
+      console.log('Auto-ingest successful:', data.message)
+      console.log('Extracted text length:', data.text_content?.length || 0)
+      
+      // Store the extracted text content in sessionStorage
+      if (data.text_content) {
+        storeFileInSession(
+          data.filename || file.name,
+          data.text_content,
+          data.doc_id,
+          file.size,
+          file.type
+        )
+      } else {
+        throw new Error('No text content extracted from document')
+      }
       
       // Also store in window object for backward compatibility
       window.uploadedFileData = {
@@ -125,26 +110,35 @@ export default function UploadPage() {
         name: file.name,
         size: file.size,
         type: file.type,
-        doc_id: 'ef22gge2'
+        doc_id: data.doc_id,
+        text_content: data.text_content
       }
       
       setProcessComplete(true)
       setIsProcessing(false)
     } catch (err) {
       console.error('Auto-ingest error:', err)
-      setError(`Processing failed: ${err.message}`)
+      setError(`Processing failed: ${err.message}. Document upload completed but text extraction may have failed.`)
       setIsProcessing(false)
       
-      // Still store file data for demo purposes
-      await storeFileInSession(file)
-      window.uploadedFileData = {
-        file: file,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        doc_id: 'ef22gge2'
+      // For fallback, try to read file locally (for text files only)
+      if (file.type.startsWith('text/')) {
+        try {
+          const fallbackContent = await file.text()
+          storeFileInSession(
+            file.name,
+            fallbackContent,
+            'ef22gge2',
+            file.size,
+            file.type
+          )
+          console.log('Used fallback local text extraction')
+        } catch (fallbackErr) {
+          console.error('Fallback text extraction failed:', fallbackErr)
+        }
       }
       
+      // Still allow user to proceed
       setProcessComplete(true)
     }
   }
@@ -158,6 +152,13 @@ export default function UploadPage() {
 
     if (!validFile) {
       alert("Please upload PDF, TXT, DOC, or DOCX files only.")
+      return
+    }
+
+    // Check file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+    if (file.size > maxSize) {
+      alert("File size must be less than 10MB.")
       return
     }
 
@@ -182,7 +183,7 @@ export default function UploadPage() {
     const interval = setInterval(() => {
       setUploadedFile((prev) => {
         if (prev && prev.uploadProgress < 100) {
-          const newProgress = Math.min(prev.uploadProgress + Math.random() * 30, 100)
+          const newProgress = Math.min(prev.uploadProgress + Math.random() * 25 + 5, 100)
           const newStatus = newProgress === 100 ? "completed" : "uploading"
 
           if (newProgress === 100) {
@@ -191,7 +192,7 @@ export default function UploadPage() {
               setIsUploading(false)
               setUploadComplete(true)
               
-              console.log('Starting auto-ingest for file:', file.name)
+              console.log('Starting auto-ingest and text extraction for file:', file.name)
               performAutoIngest(file)
             }, 500)
           }
@@ -200,7 +201,7 @@ export default function UploadPage() {
         }
         return prev
       })
-    }, 200)
+    }, 300)
   }
 
   const removeFile = () => {
@@ -367,7 +368,10 @@ export default function UploadPage() {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
                   <h3 className="text-xl font-semibold text-blue-800 dark:text-blue-200 mb-2">Processing Document</h3>
                   <p className="text-blue-700 dark:text-blue-300">
-                    Your document is being analyzed and prepared for legal services...
+                    Extracting text content and analyzing your document...
+                  </p>
+                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
+                    This may take a moment for PDF files
                   </p>
                 </CardContent>
               </Card>
@@ -393,7 +397,7 @@ export default function UploadPage() {
                   <p className="text-green-700 dark:text-green-300 mb-6">
                     {error 
                       ? "Your document has been uploaded. Some processing errors occurred, but you can still use the services."
-                      : "Your document has been successfully processed and is ready for analysis."
+                      : "Your document has been successfully processed with text extracted and is ready for analysis."
                     }
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
