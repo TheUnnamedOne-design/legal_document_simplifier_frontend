@@ -200,7 +200,7 @@ export default function RiskCheckingPage() {
     try {
       // Check if we have uploaded file data
       if (window.uploadedFileData && window.uploadedFileData.doc_id) {
-        const response = await fetch('http://127.0.0.1:5000/api/legal/risk', {
+        const response = await fetch('https://legal-doc-backend-686841980348.asia-south1.run.app/api/legal/risk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -104,7 +104,7 @@ ARTICLE 9: GOVERNING LAW
 
   const callSimplifyAPI = async (clause) => {
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/legal/simplify', {
+      const response = await fetch('https://legal-doc-backend-686841980348.asia-south1.run.app/api/legal/simplify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

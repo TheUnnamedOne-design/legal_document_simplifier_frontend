@@ -35,7 +35,7 @@ export default function QueryPage() {
       // Use doc_id from uploaded file data if available
       const docId = window.uploadedFileData?.doc_id || 'ef22gge2'
       
-      const response = await fetch('http://127.0.0.1:5000/api/legal/query', {
+      const response = await fetch('https://legal-doc-backend-686841980348.asia-south1.run.app/api/legal/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

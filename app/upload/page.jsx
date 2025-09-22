@@ -78,7 +78,7 @@ export default function UploadPage() {
 
       console.log('Uploading file to backend for text extraction...')
 
-      const response = await fetch('http://127.0.0.1:5000/api/legal/ingest', {
+      const response = await fetch('https://legal-doc-backend-686841980348.asia-south1.run.app/api/legal/ingest', {
         method: 'POST',
         body: formData,
       })
